@@ -27,7 +27,7 @@ const slipPreview = ref('')
 const target = computed(() => props.item ?? props.order?.item)
 const seller = computed(() => props.item?.seller ?? props.order?.seller ?? {})
 const isFree = computed(() => target.value?.itemType === 'FREE' || (props.order && !props.order.totalAmount))
-const maxQty = computed(() => (target.value?.itemType === 'FOOD' ? 20 : 1))
+const maxQty = computed(() => target.value?.quantity ?? (target.value?.itemType === 'FOOD' ? 20 : 1))
 const total = computed(() => (target.value?.price ?? 0) * quantity.value)
 const amount = computed(() => current.value?.totalAmount ?? total.value)
 
@@ -100,7 +100,7 @@ const close = () => emit('close', current.value)
             </div>
 
             <div class="flex items-center justify-between">
-              <span class="text-sm">ຈຳນວນ <span v-if="maxQty === 1" class="text-xs text-neutral-400">(ມີ 1 ຊິ້ນ)</span></span>
+              <span class="text-sm">ຈຳນວນ <span v-if="target.quantity || maxQty === 1" class="text-xs text-neutral-400">(ມີ {{ maxQty }} ຊິ້ນ)</span></span>
               <div class="flex items-center rounded-lg border border-neutral-200">
                 <button class="grid size-8 place-items-center disabled:opacity-30" :disabled="quantity <= 1" @click="quantity--"><Minus class="size-4" /></button>
                 <span class="w-10 text-center text-sm font-semibold">{{ quantity }}</span>

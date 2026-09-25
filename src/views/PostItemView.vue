@@ -1,7 +1,7 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ImagePlus, X, Loader2, AlertCircle, ChevronDown } from 'lucide-vue-next'
+import { ImagePlus, X, Loader2, AlertCircle, ChevronDown, Minus, Plus } from 'lucide-vue-next'
 import PageHeader from '@/components/PageHeader.vue'
 import { itemsApi, storageApi } from '@/api'
 import { toast } from '@/composables/useToast'
@@ -9,6 +9,7 @@ import { CONDITIONS, ITEM_TYPES, PICKUP_LOCATIONS, packDescription, toLocalInput
 import { errorMessage } from '@/api/http'
 
 const MAX_IMAGES = 5
+const MAX_QTY = 999
 const MAX_SIZE_MB = 5 // backend limit
 const ACCEPT = ['image/jpeg', 'image/png', 'image/webp']
 
@@ -25,6 +26,7 @@ const form = reactive({
   title: '',
   itemType: 'FOOD',
   price: '',
+  quantity: 1,
   pickupLocation: 'Pantry ຊັ້ນ 2',
   orderCutoffTime: defaultCutoff(),
   condition: CONDITIONS[1],
@@ -48,9 +50,23 @@ const errors = computed(() => {
   if (form.title.trim().length < 3) e.title = 'ກະລຸນາໃສ່ຊື່ສິນຄ້າ (ຢ່າງໜ້ອຍ 3 ຕົວອັກສອນ)'
   if (!form.pickupLocation.trim()) e.pickupLocation = 'ກະລຸນາໃສ່ຈຸດຮັບເຄື່ອງ'
   if (form.itemType !== 'FREE' && !(Number(form.price) > 0)) e.price = 'ກະລຸນາໃສ່ລາຄາ'
+  if (!(Number.isInteger(form.quantity) && form.quantity >= 1 && form.quantity <= MAX_QTY)) e.quantity = `ຈຳນວນຕ້ອງຢູ່ລະຫວ່າງ 1-${MAX_QTY}`
   if (form.itemType === 'FOOD' && new Date(form.orderCutoffTime) <= new Date()) e.orderCutoffTime = 'ເວລາປິດຮັບຕ້ອງເປັນອະນາຄົດ'
   return e
 })
+const priceDisplay = computed(() => (form.price ? Number(form.price).toLocaleString('en-US') : ''))
+
+// Keep only digits in form.price, show them grouped (25,000), and keep the caret after the same digit.
+function onPriceInput(event) {
+  const el = event.target
+  const digitsBeforeCaret = el.value.slice(0, el.selectionStart).replace(/\D/g, '').length
+  form.price = el.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 12)
+  el.value = priceDisplay.value
+  let caret = 0
+  for (let seen = 0; caret < el.value.length && seen < digitsBeforeCaret; caret++) if (/\d/.test(el.value[caret])) seen++
+  el.setSelectionRange(caret, caret)
+}
+
 const uploading = computed(() => images.value.some((i) => i.status === 'uploading'))
 
 async function upload(img) {
@@ -104,6 +120,7 @@ async function submit() {
       description: packDescription(form.description, {
         orderCutoffTime: isFood ? new Date(form.orderCutoffTime).toISOString() : undefined,
         condition: isFood ? undefined : form.condition,
+        quantity: form.quantity,
       }),
       itemType: form.itemType,
       price: form.itemType === 'FREE' ? 0 : Number(form.price),
@@ -189,11 +206,11 @@ const borderFor = (field) => (touched.value && errors.value[field] ? 'border-red
           <span class="text-sm font-semibold">ລາຄາ (₭) <span v-if="form.itemType !== 'FREE'" class="text-red-500">*</span></span>
           <div class="relative">
             <input
-              v-model="form.price"
-              type="number"
+              :value="priceDisplay"
+              type="text"
               inputmode="numeric"
-              min="0"
-              step="1000"
+              autocomplete="off"
+              @input="onPriceInput"
               :disabled="form.itemType === 'FREE'"
               :placeholder="form.itemType === 'FREE' ? 'FREE — ແຈກຟຣີ' : '0'"
               :class="[inputCls, borderFor('price'), 'pr-10']"
@@ -202,6 +219,28 @@ const borderFor = (field) => (touched.value && errors.value[field] ? 'border-red
           </div>
           <span v-if="touched && errors.price" class="text-xs text-red-500">{{ errors.price }}</span>
         </label>
+
+        <div>
+          <span class="text-sm font-semibold">ຈຳນວນ <span class="text-red-500">*</span></span>
+          <div class="mt-1 flex h-11 w-36 items-center rounded-lg border" :class="borderFor('quantity')">
+            <button type="button" class="grid h-full w-10 place-items-center disabled:opacity-30" aria-label="ຫຼຸດຈຳນວນ" :disabled="form.quantity <= 1" @click="form.quantity--">
+              <Minus class="size-4" />
+            </button>
+            <input
+              v-model.number="form.quantity"
+              type="number"
+              inputmode="numeric"
+              min="1"
+              :max="MAX_QTY"
+              aria-label="ຈຳນວນ"
+              class="h-full min-w-0 flex-1 bg-transparent text-center text-sm font-semibold outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+            />
+            <button type="button" class="grid h-full w-10 place-items-center disabled:opacity-30" aria-label="ເພີ່ມຈຳນວນ" :disabled="form.quantity >= MAX_QTY" @click="form.quantity++">
+              <Plus class="size-4" />
+            </button>
+          </div>
+          <span v-if="touched && errors.quantity" class="text-xs text-red-500">{{ errors.quantity }}</span>
+        </div>
 
         <label v-if="form.itemType === 'FOOD'" class="block">
           <span class="text-sm font-semibold">ເວລາປິດຮັບອໍເດີ <span class="text-red-500">*</span></span>

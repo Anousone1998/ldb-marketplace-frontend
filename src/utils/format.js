@@ -29,21 +29,23 @@ export function orderStage(order, role) {
   return { label: role === 'seller' ? 'ກວດສອບສະລິບ' : 'ສົ່ງສະລິບແລ້ວ', cls: 'bg-sky-100 text-sky-700' }
 }
 
-// The backend has no columns for pre-order cutoff or item condition, so they travel
+// The backend has no columns for pre-order cutoff, item condition or quantity, so they travel
 // as tagged lines at the end of `description` and are parsed back out for display.
-const META_RE = /^\[(cutoff|condition)\]\s*(.+)$/gm
+const META_RE = /^\[(cutoff|condition|qty)\]\s*(.+)$/gm
+const META_KEYS = { cutoff: 'orderCutoffTime', condition: 'condition', qty: 'quantity' }
 
-export function packDescription(text, { orderCutoffTime, condition } = {}) {
+export function packDescription(text, { orderCutoffTime, condition, quantity } = {}) {
   const lines = [text.trim()]
   if (orderCutoffTime) lines.push(`[cutoff] ${orderCutoffTime}`)
   if (condition) lines.push(`[condition] ${condition}`)
+  if (quantity) lines.push(`[qty] ${quantity}`)
   return lines.filter(Boolean).join('\n')
 }
 
 export function unpackDescription(description) {
   const meta = {}
   const text = (description ?? '').replace(META_RE, (_, key, value) => {
-    meta[key === 'cutoff' ? 'orderCutoffTime' : 'condition'] = value.trim()
+    meta[META_KEYS[key]] = key === 'qty' ? Number(value) || 1 : value.trim()
     return ''
   })
   return { description: text.trim(), ...meta }

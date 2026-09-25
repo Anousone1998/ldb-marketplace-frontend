@@ -165,6 +165,10 @@ function closeOrder() {
         <dl class="grid grid-cols-[110px_1fr] gap-y-2 text-[13px]">
           <dt class="text-neutral-500">ຈຸດຮັບເຄື່ອງ</dt>
           <dd>📍 {{ item.pickupLocation }}</dd>
+          <template v-if="item.quantity">
+            <dt class="text-neutral-500">ຈຳນວນ</dt>
+            <dd>{{ item.quantity }} ຊິ້ນ</dd>
+          </template>
           <template v-if="item.orderCutoffTime">
             <dt class="text-neutral-500">ປິດຮັບອໍເດີ</dt>
             <dd>{{ new Date(item.orderCutoffTime).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) }}</dd>
