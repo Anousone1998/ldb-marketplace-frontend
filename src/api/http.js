@@ -22,7 +22,7 @@ http.interceptors.response.use(
   (error) => {
     // An expired/invalid session anywhere except the login call itself
     if (error.response?.status === 401 && !error.config?.url?.includes('/auth/login')) {
-      useAuthStore().logout({ redirect: true })
+      useAuthStore().logout({ redirect: true, expired: true })
     }
     return Promise.reject(error)
   },

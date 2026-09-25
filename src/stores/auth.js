@@ -43,7 +43,11 @@ export const useAuthStore = defineStore('auth', {
       this.setProfile(await usersApi.me())
     },
 
-    logout({ redirect = false } = {}) {
+    /** `expired`: the session is already rejected by the API (401), so it can no longer authorise calls. */
+    logout({ redirect = false, expired = false } = {}) {
+      // Detach this device from the account while the session still works, or the backend
+      // would keep pushing this employee's notifications to whoever logs in next.
+      if (!expired && this.token) usersApi.clearFcmToken().catch(() => {})
       this.token = null
       this.user = null
       localStorage.removeItem(TOKEN_KEY)

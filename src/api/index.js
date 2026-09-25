@@ -1,4 +1,4 @@
-import http, { withFallback } from './http'
+import http, { withFallback, TOKEN_KEY } from './http'
 import { db, ME, USERS, nextId } from './mock/db'
 import { readAsDataURL, unpackDescription } from '@/utils/format'
 
@@ -78,6 +78,29 @@ export const usersApi = {
     return withFallback(
       () => http.patch('/users/me', { qrPaymentUrl }),
       () => Object.assign(ME, { qrPaymentUrl }),
+    )
+  },
+
+  /**
+   * PATCH /users/me/fcm-token. Stores this device's Firebase registration token so the
+   * backend can push to it. The backend detaches the token from any other employee first,
+   * so a shared device only ever notifies whoever is logged in.
+   */
+  updateFcmToken(fcmToken) {
+    return withFallback(
+      () => http.patch('/users/me/fcm-token', { fcmToken }),
+      () => ({ updated: true }),
+    )
+  },
+
+  /** DELETE /users/me/fcm-token, so a logged-out device stops receiving this employee's pushes. */
+  clearFcmToken() {
+    // logout() drops the stored credential in the same tick, before the request interceptor
+    // gets to run, so the header is read here instead of there.
+    const token = localStorage.getItem(TOKEN_KEY)
+    return withFallback(
+      () => http.delete('/users/me/fcm-token', { headers: token ? { Authorization: `Bearer ${token}` } : {} }),
+      () => ({ cleared: true }),
     )
   },
 }

@@ -2,6 +2,7 @@ import { readonly, ref } from 'vue'
 import { initializeApp, type FirebaseApp, type FirebaseOptions } from 'firebase/app'
 import { deleteToken, getMessaging, getToken, isSupported, onMessage, type MessagePayload, type Messaging } from 'firebase/messaging'
 import { registerServiceWorker } from './sw'
+import { usersApi } from '@/api'
 
 // FCM only: no other Firebase product (Storage, Firestore, Analytics, Auth…) is imported or
 // configured, so nothing here can incur Firebase charges. Cloud Messaging itself is free.
@@ -104,6 +105,9 @@ export function usePush() {
       token.value = await requestFcmToken()
       // Dev only: copy it into Firebase console → Messaging → "Send test message"
       if (import.meta.env.DEV && token.value) console.info('[firebase] FCM token:', token.value)
+      // Hand it to the backend: it can only push to a token it has stored. Every path that
+      // obtains a token comes through here, so this is the one place that has to do it.
+      if (token.value) await usersApi.updateFcmToken(token.value)
       permission.value = Notification.permission
       status.value = token.value ? 'enabled' : permission.value === 'denied' ? 'denied' : 'idle'
       return token.value

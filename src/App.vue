@@ -29,8 +29,9 @@ async function startPush() {
     const body = notification?.body ?? data?.body
     toast(`🔔 ${[title, body].filter(Boolean).join(': ')}`, 'info', 4000)
   })
+  // resume() re-registers the token with the backend on every start, which also repairs
+  // a row the backend detached when this device was last used by someone else.
   await push.resume()
-  // TODO: send push.token.value to the backend once it has a device-token endpoint
 }
 
 async function stopPush() {
