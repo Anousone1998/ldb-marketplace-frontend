@@ -30,6 +30,17 @@ Vite loads `.env` first, then `.env.<mode>` on top. A build stops with an error 
 resolves from the in-memory DB in `src/api/mock/db.js` and a `DEMO` pill appears in the header.
 Real 4xx/5xx errors are shown to the user, never masked. Mock data resets on page reload.
 
+## PWA & push
+
+- `public/manifest.webmanifest` + `public/icons/` (192/512, maskable 512, apple-touch 180, badge 96):
+  installable on Android/desktop Chrome and "Add to Home Screen" on iOS (required there for push).
+- `public/firebase-messaging-sw.js` is the **only** service worker (a scope can have one): offline
+  app shell *and* FCM. `src/services/sw.ts` registers it at start-up with its settings in the URL;
+  `src/services/firebase.ts` reuses that registration for push.
+- Offline caching is on only in builds (`offline=1`): pages are network-first with the cached shell
+  as fallback, `/assets/*` cache-first. API, socket and image hosts are never cached.
+  Test it with `npm run build && npm run preview`, not `npm run dev`.
+
 ## Structure
 
 ```

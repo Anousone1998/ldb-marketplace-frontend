@@ -1,6 +1,7 @@
 import { readonly, ref } from 'vue'
 import { initializeApp, type FirebaseApp, type FirebaseOptions } from 'firebase/app'
 import { deleteToken, getMessaging, getToken, isSupported, onMessage, type MessagePayload, type Messaging } from 'firebase/messaging'
+import { registerServiceWorker } from './sw'
 
 // FCM only: no other Firebase product (Storage, Firestore, Analytics, Auth…) is imported or
 // configured, so nothing here can incur Firebase charges. Cloud Messaging itself is free.
@@ -24,11 +25,8 @@ export const firebaseConfigured = Boolean(
   firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.messagingSenderId && firebaseConfig.appId && vapidValid,
 )
 
-const SW_URL = '/firebase-messaging-sw.js'
-
 let app: FirebaseApp | null = null
 let messaging: Messaging | null = null
-let swRegistration: ServiceWorkerRegistration | null = null
 
 /** Lazily created singleton; nothing touches Firebase until push is actually used. */
 export function getFirebaseApp(): FirebaseApp {
@@ -44,20 +42,6 @@ export async function getFirebaseMessaging(): Promise<Messaging | null> {
   return messaging
 }
 
-/**
- * Register public/firebase-messaging-sw.js. Files in public/ can't read import.meta.env,
- * so the config travels in the worker's URL (it holds only public client identifiers).
- */
-async function registerServiceWorker(): Promise<ServiceWorkerRegistration> {
-  if (swRegistration) return swRegistration
-  const query = new URLSearchParams(Object.entries(firebaseConfig).filter((e): e is [string, string] => Boolean(e[1])))
-  await navigator.serviceWorker.register(`${SW_URL}?${query}`)
-  // register() resolves while the worker is still installing, and PushManager.subscribe (inside
-  // getToken) fails with "no active Service Worker" until it activates. The worker's scope is "/",
-  // so ready resolves with this registration once it is active.
-  swRegistration = await navigator.serviceWorker.ready
-  return swRegistration
-}
 
 /**
  * Ask for notification permission and return this device's FCM token (send it to the backend).
@@ -69,6 +53,7 @@ export async function requestFcmToken(): Promise<string | null> {
   if (!msg) return null
   if ((await Notification.requestPermission()) !== 'granted') return null
   const serviceWorkerRegistration = await registerServiceWorker()
+  if (!serviceWorkerRegistration) return null
   return getToken(msg, { vapidKey: VAPID_KEY, serviceWorkerRegistration })
 }
 

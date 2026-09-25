@@ -1,3 +1,6 @@
+// The app's only service worker (scope "/"): FCM push + offline app shell for the PWA.
+// Registered by src/services/sw.ts, which passes settings in the URL (public/ files can't read
+// import.meta.env): the Firebase config, and offline=1 in production builds.
 importScripts(
   "https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js",
 );
@@ -14,14 +17,106 @@ const config = {
   appId: params.get("appId"),
 };
 
-const ICON = "/favicon.svg";
+const ICON = "/icons/icon-192.png";
+const BADGE = "/icons/badge-96.png"; // Android status bar: white on transparent
 const DEFAULT_TITLE = "Office Market";
 
+// ---------------------------------------------------------------- offline app shell (PWA)
+const OFFLINE = params.get("offline") === "1";
+const SHELL_CACHE = "om-shell-v1"; // index.html, manifest, icons
+const ASSET_CACHE = "om-assets-v1"; // Vite's hashed /assets/* files (immutable)
+const MAX_ASSETS = 80; // this file doesn't change per deploy, so trim old builds' files
+const SHELL = [
+  "/",
+  "/manifest.webmanifest",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+  "/icons/badge-96.png",
+];
+
 // Take over right away when a new version is deployed
-self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
+  if (OFFLINE)
+    event.waitUntil(caches.open(SHELL_CACHE).then((c) => c.addAll(SHELL)));
+});
+
 self.addEventListener("activate", (event) =>
-  event.waitUntil(self.clients.claim()),
+  event.waitUntil(
+    (async () => {
+      const keep = OFFLINE ? [SHELL_CACHE, ASSET_CACHE] : [];
+      for (const key of await caches.keys())
+        if (key.startsWith("om-") && !keep.includes(key)) await caches.delete(key);
+      await self.clients.claim();
+    })(),
+  ),
 );
+
+async function trim(cache) {
+  const keys = await cache.keys();
+  for (const req of keys.slice(0, Math.max(0, keys.length - MAX_ASSETS)))
+    await cache.delete(req);
+}
+
+self.addEventListener("fetch", (event) => {
+  const req = event.request;
+  if (!OFFLINE || req.method !== "GET") return;
+  const url = new URL(req.url);
+  // API, chat socket, Supabase images, Google fonts…: always live, never cached here
+  if (url.origin !== self.location.origin) return;
+
+  // Pages (every route is the SPA's index.html): network first so a deploy shows up at once,
+  // cached shell when offline
+  if (req.mode === "navigate") {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(SHELL_CACHE);
+        try {
+          const res = await fetch(req);
+          if (res.ok) cache.put("/", res.clone());
+          return res;
+        } catch {
+          return (await cache.match("/")) ?? Response.error();
+        }
+      })(),
+    );
+    return;
+  }
+
+  // Hashed build files never change: cache first
+  if (url.pathname.startsWith("/assets/")) {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(ASSET_CACHE);
+        const hit = await cache.match(req);
+        if (hit) return hit;
+        const res = await fetch(req);
+        if (res.ok) {
+          await cache.put(req, res.clone());
+          trim(cache);
+        }
+        return res;
+      })(),
+    );
+    return;
+  }
+
+  // Manifest and icons: cached copy first, refreshed in the background
+  if (SHELL.includes(url.pathname) && url.pathname !== "/") {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(SHELL_CACHE);
+        const hit = await cache.match(url.pathname);
+        const fresh = fetch(req)
+          .then((res) => (res.ok && cache.put(url.pathname, res.clone()), res))
+          .catch(() => hit);
+        return hit ?? fresh;
+      })(),
+    );
+  }
+});
+
+// ---------------------------------------------------------------- push (FCM)
 
 if (
   config.apiKey &&
@@ -41,7 +136,7 @@ if (
     return self.registration.showNotification(data.title || DEFAULT_TITLE, {
       body: data.body || "",
       icon: ICON,
-      badge: ICON,
+      badge: BADGE,
       image: data.image || undefined,
       tag: data.tag || undefined, // same tag replaces the previous notification (e.g. one per chat)
       renotify: Boolean(data.tag),
