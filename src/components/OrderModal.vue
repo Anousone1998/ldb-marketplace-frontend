@@ -118,7 +118,7 @@ const close = () => emit('close', current.value)
             </div>
 
             <button
-              class="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-linear-to-r from-brand to-coral font-semibold text-white shadow-md shadow-brand/30 disabled:opacity-60"
+              class="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-linear-to-r from-brand to-accent font-semibold text-white shadow-md shadow-brand/30 disabled:opacity-60"
               :disabled="busy"
               @click="placeOrder"
             >
@@ -154,7 +154,7 @@ const close = () => emit('close', current.value)
 
             <input ref="slipInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="onSlip" />
             <button
-              class="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-linear-to-r from-brand to-coral font-semibold text-white disabled:opacity-60"
+              class="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-linear-to-r from-brand to-accent font-semibold text-white disabled:opacity-60"
               :disabled="busy"
               @click="slipInput.click()"
             >

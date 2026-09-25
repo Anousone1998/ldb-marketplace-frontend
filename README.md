@@ -5,15 +5,26 @@ Mobile-first Vue 3 + Vite + Tailwind v4 + Pinia storefront, Lazada-style, for th
 
 ```bash
 npm install
-cp .env.example .env   # adjust URLs if needed
-npm run dev            # http://localhost:5173
+cp .env.example .env   # shared settings (Firebase, mock flag)
+npm run dev            # http://localhost:5173 → API http://localhost:3001
 ```
 
-| Env var | Default | |
+| Mode | Command | Env file | API |
+|---|---|---|---|
+| development | `npm run dev` | `.env.development` | `http://localhost:3001/api/v1` |
+| uat | `npm run build:uat` (`dev:uat`, `preview:uat`) | `.env.uat` | *to be set* |
+| production | `npm run build` | `.env.production` | `https://api-market.spizfrog.com/api/v1` |
+
+Vite loads `.env` first, then `.env.<mode>` on top. A build stops with an error if the mode has no
+`VITE_API_BASE_URL`, so a UAT build can't ship pointing nowhere. Machine-specific overrides go in
+`.env.local` / `.env.<mode>.local` (git-ignored).
+
+| Env var | | |
 |---|---|---|
-| `VITE_API_BASE_URL` | `http://localhost:3000/api/v1` | REST base |
-| `VITE_WS_URL` | `http://localhost:3000` | Socket.io origin (`/chat` namespace appended) |
-| `VITE_USE_MOCK` | `false` | `true` = never hit the backend |
+| `VITE_API_BASE_URL` | per mode | REST base. A relative `/api/v1` goes through the Vite dev proxy (`API_PROXY_TARGET`, default `http://localhost:3001`) |
+| `VITE_WS_URL` | per mode | Socket.io origin (`/chat` namespace appended); empty = page origin |
+| `VITE_USE_MOCK` | `.env` | `true` = never hit the backend |
+| `VITE_FIREBASE_*` | `.env` | Cloud Messaging only (push) |
 
 **Mock fallback:** if the backend is unreachable (network error / 502–504), every call
 resolves from the in-memory DB in `src/api/mock/db.js` and a `DEMO` pill appears in the header.

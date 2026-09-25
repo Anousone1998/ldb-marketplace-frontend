@@ -18,7 +18,7 @@ const tabs = [
   <div class="pointer-events-none fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-md justify-end px-4">
     <RouterLink
       to="/items/new"
-      class="pointer-events-auto flex h-12 items-center gap-1.5 rounded-full bg-linear-to-br from-brand to-coral pr-5 pl-4 text-sm font-semibold text-white shadow-lg shadow-brand/30 transition active:scale-95"
+      class="pointer-events-auto flex h-12 items-center gap-1.5 rounded-full bg-linear-to-br from-brand to-accent pr-5 pl-4 text-sm font-semibold text-white shadow-lg shadow-brand/30 transition active:scale-95"
     >
       <Plus class="size-5" :stroke-width="2.75" />
       ລົງຂາຍ

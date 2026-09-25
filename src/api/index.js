@@ -30,12 +30,54 @@ function normalizeOrder(raw) {
 }
 
 // ---------------------------------------------------------------- auth
+// The backend compares digits exactly against HR's record, which is stored without the
+// trunk "0" / country code "856" (e.g. 2022446630). Try what the user typed first, then that form.
+async function loginWithPhoneVariants({ userId, phoneNumber }) {
+  const local = phoneNumber.replace(/\D/g, '').replace(/^(856|0)/, '')
+  const variants = [...new Set([phoneNumber, local])]
+  for (const [i, phone] of variants.entries()) {
+    try {
+      return await http.post('/auth/login', { userId, phoneNumber: phone })
+    } catch (error) {
+      if (error.response?.status !== 401 || i === variants.length - 1) throw error
+    }
+  }
+}
+
 export const authApi = {
   /** { userId: 'LDB1067', phoneNumber: '020 2244 6630' } -> { accessToken, user } */
   login(credentials) {
     return withFallback(
-      () => http.post('/auth/login', credentials),
+      () => loginWithPhoneVariants(credentials),
       () => ({ accessToken: `mock.${btoa(credentials.userId)}.token`, tokenType: 'Bearer', user: summary(ME) }),
+    )
+  },
+}
+
+// ---------------------------------------------------------------- users
+export const usersApi = {
+  /** GET /users/me -> { userId, fullName, department, phoneNumber, qrPaymentUrl } */
+  me() {
+    return withFallback(() => http.get('/users/me'), () => ME)
+  },
+
+  /** GET /users/:userId -> { userId, fullName, department, phoneNumber, qrPaymentUrl } */
+  get(userId) {
+    return withFallback(
+      () => http.get(`/users/${userId}`),
+      () => USERS.find((u) => u.userId === userId) ?? Promise.reject(httpError(404, `Employee ${userId} not found`)),
+    )
+  },
+
+  /**
+   * PATCH /users/me. Only the payment QR is sent: the same endpoint can change phoneNumber,
+   * which is the login credential. `qrPaymentUrl` must come from storageApi.upload (folder
+   * 'qr-codes'); null removes it.
+   */
+  updatePaymentQr(qrPaymentUrl) {
+    return withFallback(
+      () => http.patch('/users/me', { qrPaymentUrl }),
+      () => Object.assign(ME, { qrPaymentUrl }),
     )
   },
 }
@@ -106,19 +148,20 @@ export const itemsApi = {
 
 // ---------------------------------------------------------------- storage
 export const storageApi = {
-  /** POST /storage/upload?folder=items|payment-slips|qr-codes -> public URL */
+  /** POST /storage/image?folder=items|payment-slips|qr-codes (multipart `file`, JPG/PNG/WEBP ≤ 5MB) -> public URL */
   async upload(file, { folder = 'items', onProgress } = {}) {
     const form = new FormData()
     form.append('file', file)
     const res = await withFallback(
       () =>
-        http.post('/storage/upload', form, {
+        http.post('/storage/image', form, {
           params: { folder },
+          timeout: 60_000, // photos up to 5MB on office Wi-Fi
           onUploadProgress: (e) => e.total && onProgress?.(Math.round((e.loaded / e.total) * 100)),
         }),
-      async () => ({ imageUrl: await readAsDataURL(file) }),
+      async () => ({ url: await readAsDataURL(file) }),
     )
-    return res.imageUrl
+    return res.url
   },
 }
 
@@ -226,8 +269,8 @@ export const chatApi = {
   },
 
   /** GET /chats/history?itemId&peerId -> { messages (oldest first), hasMore, nextBeforeId } */
-  history({ itemId, peerId, beforeId }) {
-    return withFallback(
+  async history({ itemId, peerId, beforeId }) {
+    const res = await withFallback(
       () => http.get('/chats/history', { params: { itemId, peerId, beforeId, limit: 50 } }),
       () => ({
         itemId,
@@ -237,6 +280,9 @@ export const chatApi = {
         nextBeforeId: null,
       }),
     )
+    // The API sends the messages as `data` and the paging cursor in `meta`, which unwrap() returns as { items, meta }
+    if (!res.items) return res
+    return { messages: res.items, hasMore: Boolean(res.meta.hasMore), nextBeforeId: res.meta.nextBeforeId ?? null }
   },
 
   markRead({ itemId, peerId }) {

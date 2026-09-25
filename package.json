@@ -5,11 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:uat": "vite --mode uat",
+    "dev:prod": "vite --mode production",
     "build": "vite build",
-    "preview": "vite preview"
+    "build:uat": "vite build --mode uat",
+    "preview": "vite preview",
+    "preview:uat": "vite build --mode uat && vite preview"
   },
   "dependencies": {
     "axios": "^1.7.9",
+    "firebase": "^12.19.0",
     "lucide-vue-next": "^0.468.0",
     "pinia": "^3.0.1",
     "socket.io-client": "^4.8.1",

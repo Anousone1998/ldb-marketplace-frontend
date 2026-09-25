@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { authApi } from '@/api'
+import { authApi, usersApi } from '@/api'
 import { TOKEN_KEY } from '@/api/http'
 import { disconnectChatSocket } from '@/services/socket'
 import router from '@/router'
@@ -31,6 +31,16 @@ export const useAuthStore = defineStore('auth', {
       this.user = user
       localStorage.setItem(TOKEN_KEY, accessToken)
       localStorage.setItem(USER_KEY, JSON.stringify(user))
+    },
+
+    /** Merge profile fields (e.g. qrPaymentUrl, which the login response omits) into the session user. */
+    setProfile(profile) {
+      this.user = { ...this.user, ...profile }
+      localStorage.setItem(USER_KEY, JSON.stringify(this.user))
+    },
+
+    async refreshProfile() {
+      this.setProfile(await usersApi.me())
     },
 
     logout({ redirect = false } = {}) {

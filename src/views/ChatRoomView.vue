@@ -27,8 +27,9 @@ const fileInput = ref(null)
 const conv = computed(() => chat.conversations[key.value])
 const messages = computed(() => conv.value?.messages ?? [])
 const isMine = (m) => m.senderId === auth.user?.userId
-const partner = computed(() => conv.value && { userId: conv.value.peerId, fullName: conv.value.peerName ?? conv.value.peerId })
 const partnerIsSeller = computed(() => item.value && conv.value?.peerId === item.value.sellerId)
+// Never show the employee ID; until the name loads, show the role
+const partner = computed(() => conv.value && { userId: conv.value.peerId, fullName: conv.value.peerName ?? (partnerIsSeller.value ? 'ຜູ້ຂາຍ' : 'ຜູ້ຊື້') })
 
 async function scrollToBottom(smooth = true) {
   await nextTick()
@@ -155,7 +156,7 @@ const showDateDivider = (i) =>
           <div
             v-else
             class="max-w-[72%] rounded-2xl px-3 py-2 text-sm shadow-sm"
-            :class="isMine(m) ? 'rounded-br-md bg-linear-to-br from-brand to-coral text-white' : 'rounded-bl-md bg-white text-neutral-800'"
+            :class="isMine(m) ? 'rounded-br-md bg-linear-to-br from-brand to-accent text-white' : 'rounded-bl-md bg-white text-neutral-800'"
           >
             <p class="break-words whitespace-pre-line">{{ m.messageText }}</p>
           </div>
@@ -204,7 +205,7 @@ const showDateDivider = (i) =>
       />
       <button
         type="submit"
-        class="grid size-10 shrink-0 place-items-center rounded-full bg-linear-to-br from-brand to-coral text-white transition disabled:from-neutral-300 disabled:to-neutral-300"
+        class="grid size-10 shrink-0 place-items-center rounded-full bg-linear-to-br from-brand to-accent text-white transition disabled:from-neutral-300 disabled:to-neutral-300"
         :disabled="!text.trim() || !conv"
         aria-label="ສົ່ງ"
       >

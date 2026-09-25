@@ -5,6 +5,7 @@ import { BadgeCheck, LogOut, Package, ReceiptText, Store, Loader2 } from 'lucide
 import ProductCard from '@/components/ProductCard.vue'
 import SellerAvatar from '@/components/SellerAvatar.vue'
 import OrderModal from '@/components/OrderModal.vue'
+import PaymentQrCard from '@/components/PaymentQrCard.vue'
 import { itemsApi, ordersApi } from '@/api'
 import { errorMessage } from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
@@ -29,6 +30,7 @@ const busyId = ref(null)
 
 itemsApi.bySeller(auth.user.userId).then((rows) => (listings.value = rows)).catch(() => {})
 orders.load().catch(() => {})
+auth.refreshProfile().catch(() => {})
 
 const stats = computed(() => [
   { label: 'ກຳລັງຂາຍ', value: listings.value.filter((i) => i.status === 'AVAILABLE').length },
@@ -65,7 +67,7 @@ function logout() {
 
 <template>
   <div>
-    <header class="bg-linear-to-br from-brand to-coral px-4 pt-[calc(env(safe-area-inset-top)+20px)] pb-14 text-white">
+    <header class="bg-linear-to-br from-brand to-accent px-4 pt-[calc(env(safe-area-inset-top)+20px)] pb-14 text-white">
       <div class="flex items-center gap-3">
         <SellerAvatar :user="auth.user" size="size-16 text-2xl ring-4 ring-white/30" />
         <div class="min-w-0 flex-1">
@@ -87,6 +89,8 @@ function logout() {
         <p class="text-[11px] text-neutral-500">{{ s.label }}</p>
       </div>
     </div>
+
+    <PaymentQrCard />
 
     <div class="sticky top-0 z-20 mt-3 flex border-b border-neutral-200 bg-white">
       <RouterLink

@@ -9,6 +9,9 @@ import { isImageMessage, timeAgo } from '@/utils/format'
 const chat = useChatStore()
 const auth = useAuthStore()
 
+// Shown until the peer's name is loaded (never the employee ID)
+const roleOf = (conv) => (conv.sellerId === auth.user?.userId ? 'ຜູ້ຊື້' : 'ຜູ້ຂາຍ')
+
 onMounted(() => chat.initialized && chat.refreshInbox())
 onActivated(() => chat.refreshInbox())
 
@@ -22,7 +25,7 @@ function preview(conv) {
 
 <template>
   <div>
-    <header class="sticky top-0 z-30 bg-linear-to-r from-brand to-coral px-4 pt-[calc(env(safe-area-inset-top)+14px)] pb-3 text-white">
+    <header class="sticky top-0 z-30 bg-linear-to-r from-brand to-accent px-4 pt-[calc(env(safe-area-inset-top)+14px)] pb-3 text-white">
       <h1 class="text-lg font-bold">ຂໍ້ຄວາມ</h1>
       <p class="text-xs opacity-90">
         <span class="mr-1 inline-block size-2 rounded-full" :class="chat.connected ? 'bg-emerald-300' : 'bg-white/50'" />
@@ -42,14 +45,14 @@ function preview(conv) {
           <div class="relative shrink-0">
             <img :src="conv.itemImage" alt="" class="size-14 rounded-lg bg-neutral-100 object-cover" />
             <SellerAvatar
-              :user="{ userId: conv.peerId, fullName: conv.peerName ?? conv.peerId }"
+              :user="{ userId: conv.peerId, fullName: conv.peerName ?? roleOf(conv) }"
               size="size-6 text-[10px] ring-2 ring-white"
               class="absolute -right-1.5 -bottom-1.5"
             />
           </div>
           <div class="min-w-0 flex-1">
             <div class="flex items-baseline gap-2">
-              <p class="truncate text-sm font-semibold">{{ conv.peerName ?? conv.peerId }}</p>
+              <p class="truncate text-sm font-semibold">{{ conv.peerName ?? roleOf(conv) }}</p>
               <span class="shrink-0 rounded bg-neutral-100 px-1 text-[10px] text-neutral-500">
                 {{ conv.sellerId === auth.user?.userId ? 'ຜູ້ຊື້' : 'ຜູ້ຂາຍ' }}
               </span>

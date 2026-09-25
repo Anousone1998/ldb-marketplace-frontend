@@ -108,7 +108,7 @@ function closeOrder() {
       </ImageCarousel>
 
       <!-- Pre-order flash strip -->
-      <div v-if="item.itemType === 'FOOD' && item.orderCutoffTime" class="flex items-center justify-between bg-linear-to-r from-brand to-coral px-3 py-2 text-white">
+      <div v-if="item.itemType === 'FOOD' && item.orderCutoffTime" class="flex items-center justify-between bg-linear-to-r from-brand to-accent px-3 py-2 text-white">
         <span class="flex items-center gap-1 text-sm font-extrabold italic"><Clock class="size-4" /> PRE-ORDER</span>
         <span v-if="cutoffLeft" class="text-xs">ປິດຮັບໃນ <b class="font-mono text-sm">{{ cutoffLeft }}</b></span>
         <span v-else class="text-xs font-semibold">ປິດຮັບອໍເດີແລ້ວ ({{ formatTime(item.orderCutoffTime) }})</span>
@@ -195,7 +195,7 @@ function closeOrder() {
         </RouterLink>
         <button
           v-if="!isMine"
-          class="flex h-11 flex-[1.3] items-center justify-center gap-1.5 rounded-full bg-linear-to-r from-brand to-coral text-[13px] font-semibold text-white shadow-md shadow-brand/30 disabled:from-neutral-300 disabled:to-neutral-300 disabled:shadow-none"
+          class="flex h-11 flex-[1.3] items-center justify-center gap-1.5 rounded-full bg-linear-to-r from-brand to-accent text-[13px] font-semibold text-white shadow-md shadow-brand/30 disabled:from-neutral-300 disabled:to-neutral-300 disabled:shadow-none"
           :disabled="!canOrder"
           @click="showOrder = true"
         >

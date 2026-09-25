@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { chatApi } from '@/api'
+import { chatApi, usersApi } from '@/api'
 import { apiState } from '@/api/http'
 import { connectChatSocket } from '@/services/socket'
 import { useAuthStore } from './auth'
@@ -23,6 +23,8 @@ export const convKey = (itemId, peerId) => `${itemId}:${peerId}`
 
 // Non-reactive handle kept outside Pinia state
 let socket = null
+// userId -> Promise<fullName>, so each unknown peer is looked up once
+const nameLookups = new Map()
 
 const MOCK_REPLIES = ['ສະບາຍດີເດີ້! ຍັງມີຢູ່ ສົນໃຈບໍ່? 😊', 'ໄດ້ເລີຍ ມາຮັບຕາມຈຸດນັດໄດ້ເລີຍ 🙏', 'ໂອເຄ ເດີ້ ຂອບໃຈຫຼາຍໆ']
 
@@ -99,7 +101,19 @@ export const useChatStore = defineStore('chat', {
         key, itemId, peerId, messages: [], unread: 0, loaded: false, typing: false, hasMore: false, nextBeforeId: null,
       })
       for (const [k, v] of Object.entries({ peerName, itemTitle, itemImage, sellerId })) if (v != null) conv[k] = v
+      if (!conv.peerName) this.resolvePeerName(conv)
       return conv
+    },
+
+    /** A seller opening /chats/:itemId?peer=<buyerId> may not know the buyer's name yet: fetch it. */
+    resolvePeerName(conv) {
+      const { peerId } = conv
+      if (!nameLookups.has(peerId)) {
+        nameLookups.set(peerId, usersApi.get(peerId).then((u) => u.fullName).catch(() => (nameLookups.delete(peerId), null)))
+      }
+      nameLookups.get(peerId).then((name) => {
+        if (name && !conv.peerName) this.conversations[conv.key].peerName = name
+      })
     },
 
     async openRoom({ item, peerId, peerName }) {

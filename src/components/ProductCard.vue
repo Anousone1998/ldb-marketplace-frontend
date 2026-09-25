@@ -25,7 +25,7 @@ const isFree = computed(() => formatPrice(props.item) === 'FREE')
 
       <span
         v-if="item.itemType === 'FOOD' && item.orderCutoffTime && !unavailable"
-        class="absolute bottom-0 left-0 flex items-center gap-1 rounded-tr-lg bg-linear-to-r from-brand to-coral px-1.5 py-0.5 text-[10px] font-semibold text-white"
+        class="absolute bottom-0 left-0 flex items-center gap-1 rounded-tr-lg bg-linear-to-r from-brand to-accent px-1.5 py-0.5 text-[10px] font-semibold text-white"
       >
         <Clock class="size-3" /> PRE-ORDER · ປິດ {{ formatTime(item.orderCutoffTime) }}
       </span>

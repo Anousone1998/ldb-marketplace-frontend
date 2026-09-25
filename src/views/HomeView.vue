@@ -153,7 +153,7 @@ onActivated(() => {
 <template>
   <div>
     <!-- Sticky gradient header -->
-    <header ref="header" class="sticky top-0 z-30 bg-linear-to-r from-brand to-coral px-3 pt-[calc(env(safe-area-inset-top)+10px)] pb-3">
+    <header ref="header" class="sticky top-0 z-30 bg-linear-to-r from-brand to-accent px-3 pt-[calc(env(safe-area-inset-top)+10px)] pb-3">
       <div class="mb-2 flex items-center justify-between text-white">
         <p class="text-[15px] font-extrabold tracking-tight">
           Office<span class="font-medium opacity-90">Market</span>
@@ -179,12 +179,12 @@ onActivated(() => {
           placeholder="ຄົ້ນຫາສິນຄ້າ, ອາຫານ, ໝູ່ຮ່ວມງານ..."
           class="min-w-0 flex-1 bg-transparent text-[13px] text-neutral-800 outline-none placeholder:text-neutral-400"
         />
-        <span class="rounded-full bg-linear-to-r from-brand to-coral px-3 py-1 text-xs font-semibold text-white">ຄົ້ນຫາ</span>
+        <span class="rounded-full bg-linear-to-r from-brand to-accent px-3 py-1 text-xs font-semibold text-white">ຄົ້ນຫາ</span>
       </label>
     </header>
 
     <!-- Promo banner -->
-    <div class="bg-linear-to-b from-coral/0 to-page px-3 pt-3">
+    <div class="bg-linear-to-b from-accent/0 to-page px-3 pt-3">
       <div class="relative overflow-hidden rounded-xl bg-linear-to-r from-navy to-indigo-600 p-4 text-white">
         <p class="text-[11px] font-semibold tracking-wider text-amber-300 uppercase">Internal only · ບໍ່ມີຄ່າທຳນຽມ</p>
         <p class="mt-1 text-lg leading-tight font-bold">ສັ່ງເຂົ້າທ່ຽງ ຈາກໝູ່ຮ່ວມງານ<br />ຮັບທີ່ Pantry ໃກ້ໂຕະ 🍱</p>

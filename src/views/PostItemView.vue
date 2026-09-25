@@ -7,6 +7,7 @@ import { itemsApi, storageApi } from '@/api'
 import { toast } from '@/composables/useToast'
 import { CONDITIONS, ITEM_TYPES, PICKUP_LOCATIONS, packDescription, toLocalInput } from '@/utils/format'
 import { errorMessage } from '@/api/http'
+import { useAuthStore } from '@/stores/auth'
 
 const MAX_IMAGES = 5
 const MAX_QTY = 999
@@ -14,6 +15,8 @@ const MAX_SIZE_MB = 5 // backend limit
 const ACCEPT = ['image/jpeg', 'image/png', 'image/webp']
 
 const router = useRouter()
+const auth = useAuthStore()
+auth.refreshProfile().catch(() => {})
 
 function defaultCutoff() {
   const d = new Date()
@@ -75,8 +78,9 @@ async function upload(img) {
   try {
     img.url = await storageApi.upload(img.file, { folder: 'items', onProgress: (p) => (img.progress = p) })
     img.status = 'done'
-  } catch {
+  } catch (e) {
     img.status = 'error'
+    toast(errorMessage(e, 'ອັບໂຫຼດຮູບບໍ່ສຳເລັດ'), 'error')
   }
 }
 
@@ -218,6 +222,10 @@ const borderFor = (field) => (touched.value && errors.value[field] ? 'border-red
             <span class="absolute top-1/2 right-3 -translate-y-1/2 pt-1 text-sm text-neutral-400">₭</span>
           </div>
           <span v-if="touched && errors.price" class="text-xs text-red-500">{{ errors.price }}</span>
+          <span v-if="form.itemType !== 'FREE' && auth.user.qrPaymentUrl === null" class="mt-1 block rounded-lg bg-brand-50 px-2.5 py-1.5 text-xs text-brand-600">
+            ຍັງບໍ່ມີ QR ຊຳລະເງິນ, ຜູ້ຊື້ຈະຈ່າຍເງິນສົດ.
+            <RouterLink to="/profile" class="font-semibold underline">ອັບໂຫຼດ QR</RouterLink>
+          </span>
         </label>
 
         <div>
@@ -280,7 +288,7 @@ const borderFor = (field) => (touched.value && errors.value[field] ? 'border-red
       <div class="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t border-neutral-200 bg-white px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+8px)]">
         <button
           type="submit"
-          class="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-linear-to-r from-brand to-coral text-[15px] font-bold text-white shadow-lg shadow-brand/30 disabled:opacity-60"
+          class="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-linear-to-r from-brand to-accent text-[15px] font-bold text-white shadow-lg shadow-brand/30 disabled:opacity-60"
           :disabled="submitting"
         >
           <Loader2 v-if="submitting || uploading" class="size-5 animate-spin" />

@@ -3,7 +3,7 @@ import { reactive } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 
 export const TOKEN_KEY = 'icm_token'
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
 const FORCE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
 
 /** `mock` flips to true once any request is served from fallback data. */
@@ -30,13 +30,23 @@ http.interceptors.response.use(
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-/** Human-readable message from a NestJS error body `{ message: string | string[] }`. */
+/** Human-readable message from an API error body `{ message: string | string[], errors?: [{ field, messages }] }`. */
 export function errorMessage(error, fallback) {
-  const msg = error?.response?.data?.message
+  const body = error?.response?.data
+  const msg = body?.errors?.[0]?.messages?.[0] ?? body?.message
   return (Array.isArray(msg) ? msg[0] : msg) || fallback
 }
 
 const unreachable = (error) => !error.response || [502, 503, 504].includes(error.response.status)
+
+/**
+ * Strip the API envelope `{ status, statusCode, message, data, meta }` (older builds: `{ success, data }`).
+ * Paginated responses carry `meta` beside a `data` array; they are returned as `{ items, meta }`.
+ */
+function unwrap(body) {
+  if (!body || typeof body !== 'object' || !('data' in body) || !('statusCode' in body || 'success' in body)) return body
+  return Array.isArray(body.data) && body.meta ? { items: body.data, meta: body.meta } : body.data
+}
 
 /**
  * Run the real request and unwrap the `{ success, data }` envelope.
@@ -46,8 +56,8 @@ const unreachable = (error) => !error.response || [502, 503, 504].includes(error
 export async function withFallback(request, mock) {
   if (!FORCE_MOCK) {
     try {
-      const { data } = await request()
-      return data && 'success' in data ? data.data : data
+      const { data: body } = await request()
+      return unwrap(body)
     } catch (error) {
       if (!unreachable(error)) throw error
       if (!apiState.mock) console.warn('[api] backend unreachable, using mock data:', error.message)

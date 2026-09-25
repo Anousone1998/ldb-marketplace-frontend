@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client'
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:3000'
+const WS_URL = import.meta.env.VITE_WS_URL || window.location.origin
 let socket = null
 
 /** Singleton connection to the `/chat` namespace, authenticated with the JWT. */
