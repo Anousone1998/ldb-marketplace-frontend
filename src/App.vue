@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useChatStore } from '@/stores/chat'
 import { useOrdersStore } from '@/stores/orders'
 import { toast } from '@/composables/useToast'
+import { reloadApp, updateAvailable } from '@/composables/useAppUpdate'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -63,6 +64,14 @@ watch(
       </KeepAlive>
     </RouterView>
     <BottomNav v-if="!route.meta.hideNav" />
+    <button
+      v-if="updateAvailable"
+      type="button"
+      class="fixed inset-x-0 top-[calc(env(safe-area-inset-top)+8px)] z-50 mx-auto flex w-fit items-center gap-2 rounded-full bg-neutral-900/90 px-4 py-2 text-xs font-medium text-white shadow-lg"
+      @click="reloadApp()"
+    >
+      ມີເວີຊັນໃໝ່ <span class="font-semibold text-sky-300">ແຕະເພື່ອໂຫຼດໃໝ່</span>
+    </button>
     <ToastHost />
   </div>
 </template>

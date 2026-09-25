@@ -41,6 +41,17 @@ Real 4xx/5xx errors are shown to the user, never masked. Mock data resets on pag
   as fallback, `/assets/*` cache-first. API, socket and image hosts are never cached.
   Test it with `npm run build && npm run preview`, not `npm run dev`.
 
+## Deploying (Cloudflare Pages)
+
+- `public/_headers`: HTML, the service worker and the manifest are `no-cache` (revalidated on each
+  load); `/assets/*` is immutable (content-hashed names).
+- Every build writes `/version.json` (Cloudflare's commit SHA, else a timestamp). Open tabs and
+  installed PWAs check it on focus and every 10 minutes; when it changed, the next page change is a
+  full load of the new version and a "ມີເວີຊັນໃໝ່" bar offers to reload now
+  (`src/composables/useAppUpdate.js`). A chunk removed by a deploy triggers one automatic reload.
+- In the Cloudflare zone, keep *Caching → Browser Cache TTL* on "Respect Existing Headers" and
+  don't add a "Cache Everything" rule for the site, or `index.html` gets cached again.
+
 ## Structure
 
 ```

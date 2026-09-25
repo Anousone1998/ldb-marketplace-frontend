@@ -23,8 +23,8 @@ const DEFAULT_TITLE = "Office Market";
 
 // ---------------------------------------------------------------- offline app shell (PWA)
 const OFFLINE = params.get("offline") === "1";
-const SHELL_CACHE = "om-shell-v1"; // index.html, manifest, icons
-const ASSET_CACHE = "om-assets-v1"; // Vite's hashed /assets/* files (immutable)
+const SHELL_CACHE = "om-shell-v2"; // index.html, manifest, icons
+const ASSET_CACHE = "om-assets-v2"; // Vite's hashed /assets/* files (immutable)
 const MAX_ASSETS = 80; // this file doesn't change per deploy, so trim old builds' files
 const SHELL = [
   "/",
@@ -72,7 +72,9 @@ self.addEventListener("fetch", (event) => {
       (async () => {
         const cache = await caches.open(SHELL_CACHE);
         try {
-          const res = await fetch(req);
+          // no-cache: always revalidate with the server, never the browser's HTTP cache,
+          // or a stale index.html would keep pointing at the previous build
+          const res = await fetch(req, { cache: "no-cache" });
           if (res.ok) cache.put("/", res.clone());
           return res;
         } catch {
@@ -91,7 +93,10 @@ self.addEventListener("fetch", (event) => {
         const hit = await cache.match(req);
         if (hit) return hit;
         const res = await fetch(req);
-        if (res.ok) {
+        // A file from an older build no longer exists; the SPA fallback then answers with
+        // index.html (200). Never cache that as JS/CSS.
+        const isHtml = res.headers.get("content-type")?.includes("text/html");
+        if (res.ok && !isHtml) {
           await cache.put(req, res.clone());
           trim(cache);
         }

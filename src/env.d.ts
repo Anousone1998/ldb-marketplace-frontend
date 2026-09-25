@@ -14,3 +14,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+/** Build ID (see vite.config.js); matches /version.json of the same deploy */
+declare const __APP_VERSION__: string

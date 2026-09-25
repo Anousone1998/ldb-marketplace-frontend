@@ -3,6 +3,20 @@ import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 
+// One ID per build: Cloudflare Pages' commit SHA when available, otherwise the build time.
+// Baked into the bundle and written to /version.json so open tabs can spot a newer deploy.
+const APP_VERSION = process.env.CF_PAGES_COMMIT_SHA?.slice(0, 12) || Date.now().toString(36)
+
+function versionFile() {
+  return {
+    name: 'version-file',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ version: APP_VERSION }) })
+    },
+  }
+}
+
 // Modes: development (npm run dev) · uat (npm run build:uat) · production (npm run build).
 // Each reads .env, then .env.<mode> on top.
 export default defineConfig(({ command, mode }) => {
@@ -15,7 +29,8 @@ export default defineConfig(({ command, mode }) => {
 
   const proxyTarget = process.env.API_PROXY_TARGET || 'http://localhost:3001'
   return {
-    plugins: [vue(), tailwindcss()],
+    plugins: [vue(), tailwindcss(), versionFile()],
+    define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
     resolve: {
       alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
     },
