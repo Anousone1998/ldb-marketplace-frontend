@@ -10,13 +10,28 @@ const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
-const form = reactive({ userId: '', phoneNumber: '' })
+const REMEMBER_KEY = 'icm_remember'
+
+function readRemembered() {
+  try {
+    return JSON.parse(localStorage.getItem(REMEMBER_KEY))
+  } catch {
+    return null
+  }
+}
+
+const remembered = readRemembered()
+const form = reactive({ userId: remembered?.userId || '', phoneNumber: remembered?.phoneNumber || '' })
+const remember = ref(!!remembered)
 const busy = ref(false)
 
 async function submit() {
   busy.value = true
   try {
-    await auth.login({ userId: form.userId.trim(), phoneNumber: form.phoneNumber.trim() })
+    const credentials = { userId: form.userId.trim(), phoneNumber: form.phoneNumber.trim() }
+    await auth.login(credentials)
+    if (remember.value) localStorage.setItem(REMEMBER_KEY, JSON.stringify(credentials))
+    else localStorage.removeItem(REMEMBER_KEY)
     // Still inside the login tap, so the browser allows the notification prompt. Not awaited: never block navigation on it.
     import('@/services/firebase').then((m) => m.usePush().enable()).catch(() => {})
     router.replace(route.query.redirect || '/')
@@ -45,6 +60,10 @@ async function submit() {
       <label class="flex h-12 items-center gap-2 rounded-xl border border-neutral-200 px-3 focus-within:border-brand">
         <Phone class="size-5 text-neutral-400" />
         <input v-model="form.phoneNumber" required type="tel" inputmode="tel" autocomplete="tel" placeholder="ເບີໂທທີ່ລົງທະບຽນກັບ HR (020 ...)" class="flex-1 text-sm outline-none" />
+      </label>
+      <label class="flex items-center gap-2 px-1 text-sm text-neutral-600 select-none">
+        <input v-model="remember" type="checkbox" class="size-4 accent-brand" />
+        ຈື່ຂ້ອຍໄວ້ (Remember me)
       </label>
       <button
         class="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-linear-to-r from-brand to-accent font-bold text-white shadow-lg shadow-brand/30 disabled:opacity-60"
